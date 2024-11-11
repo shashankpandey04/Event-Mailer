@@ -1,1 +1,5 @@
 .env
+certificate.png
+certificates/
+users.csv
+certificate_template.html
