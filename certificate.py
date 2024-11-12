@@ -1,5 +1,4 @@
 from flask import Flask, render_template
-import json
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -7,12 +6,19 @@ from email.mime.application import MIMEApplication
 import os
 import time
 import csv
+import dotenv
 from PIL import Image, ImageDraw, ImageFont
 
 app = Flask(__name__)
 
+dotenv.load_dotenv()
+
 SENDER_EMAIL = os.getenv("EMAIL_USER")
 PASSWORD = os.getenv("EMAIL_PASS")
+
+if not SENDER_EMAIL or not PASSWORD:
+    print("Error: Email credentials are missing.")
+    exit(1)
 
 def add_text_to_certificate(name, regno):
     event_details = "{{For attending The Secure Way on 14th November 2024}}"
@@ -51,22 +57,25 @@ def add_text_to_certificate(name, regno):
     img.save(output_path, "PDF", resolution=100.0)
     return output_path
 
-@app.route('/send/certificates')
-def send_certificate():
+def create_certificate():
     with open('users.csv', newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         for user in reader:
-            fullname = user['name']
-            registration = user['regno']
-            recipient_email = user['email']
+            try:
+                fullname = user['name']
+                registration = user['regno']
+                recipient_email = user['email']
 
-            email_content = render_template('certificate_template.html', data=user)
-            certificate_path = add_text_to_certificate(fullname, registration)
+                email_content = render_template('certificate_template.html', data=user)
+                certificate_path = add_text_to_certificate(fullname, registration)
 
-            send_certificate(recipient_email, "Certificate: {{event name}} by {{XYZ}}", email_content, certificate_path)
-            time.sleep(3)
+                send_certificate(recipient_email, "Certificate: The Secure Way by AWS Cloud Club LPU}", email_content, certificate_path)
+                print(f"Email sent to {recipient_email}")
+                time.sleep(3)
+            except Exception as e:
+                print(f"Failed to send email to {recipient_email}: {str(e)}")
 
-    return "Emails sent successfully to all users."
+    print("All emails sent successfully")
 
 def send_certificate(to_email, subject, body, attachment_path):
     msg = MIMEMultipart()
@@ -86,9 +95,14 @@ def send_certificate(to_email, subject, body, attachment_path):
         server.login(SENDER_EMAIL, PASSWORD)
         server.send_message(msg)
         server.quit()
-        print(f"Email sent to {to_email}")
     except Exception as e:
         print(f"Failed to send email to {to_email}: {str(e)}")
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    with app.app_context():
+        try:
+            print(f"Mail Server Started")
+            create_certificate()
+        except Exception as e:
+            print(f"Error: {str(e)}")
+

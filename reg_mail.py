@@ -1,5 +1,6 @@
 from flask import Flask, render_template
 import csv
+import dotenv
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -8,11 +9,16 @@ import time
 
 app = Flask(__name__)
 
+dotenv.load_dotenv()
+
 SENDER_EMAIL = os.getenv("EMAIL_USER")
 PASSWORD = os.getenv("EMAIL_PASS")
 
-@app.route('/send/emails')
-def send_emails():
+if not SENDER_EMAIL or not PASSWORD:
+    print("Error: Email credentials are missing.")
+    exit(1)
+
+def create_emails():
     with open('users.csv', newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         for user in reader:
@@ -49,9 +55,13 @@ def send_email(to_email, subject, body):
         server.login(SENDER_EMAIL, PASSWORD)
         server.send_message(msg)
         server.quit()
-        print(f"Email sent to {to_email}")
     except Exception as e:
         print(f"Failed to send email to {to_email}: {str(e)}")
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    with app.app_context():
+        try:
+            print("Mail Server Started")
+            print(create_emails())
+        except Exception as e:
+            print(f"Error: {str(e)}")
