@@ -21,7 +21,7 @@ if not SENDER_EMAIL or not PASSWORD:
     exit(1)
 
 def add_text_to_certificate(name, regno):
-    event_details = "{{For attending The Secure Way on 14th November 2024}}"
+    event_details = "For attending The Secure Way on 14th November 2024"
     template_path = 'certificate.png'
     output_folder = "certificates"
     
